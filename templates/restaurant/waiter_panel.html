@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block title %}Ofitsant paneli - QR Menu{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2><i class="bi bi-person-badge text-primary"></i> Ofitsant paneli</h2>
+            <p class="text-muted">Stollar va buyurtmalar boshqaruvi</p>
+        </div>
+    </div>
+    
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h3>{{ active_sessions.count }}</h3>
+                    <p class="mb-0"><i class="bi bi-table"></i> Faol stollar</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h3>{{ today_stats.total_sessions|default:0 }}</h3>
+                    <p class="mb-0"><i class="bi bi-check-circle"></i> Bugun yopilgan</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h3>{{ today_stats.total_revenue|default:0|floatformat:0 }} so'm</h3>
+                    <p class="mb-0"><i class="bi bi-cash-stack"></i> Bugun daromad</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tables Grid -->
+    <h4 class="mb-3">Stollar</h4>
+    <div class="row">
+        {% for table in tables %}
+            <div class="col-md-6 col-lg-4 col-xl-3 mb-3">
+                <div class="card {% if table.active_session %}border-primary{% endif %}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h4 class="mb-0">
+                                <i class="bi bi-table"></i> #{{ table.number }}
+                            </h4>
+                            <span class="badge bg-secondary">{{ table.floor }}-etaj</span>
+                        </div>
+                        
+                        {% if table.active_session %}
+                            <div class="alert alert-primary mb-2 py-2">
+                                <small>
+                                    <i class="bi bi-clock"></i> 
+                                    {{ table.active_session.created_at|date:"H:i" }}
+                                </small>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Buyurtmalar:</span>
+                                <strong>{{ table.order_count }}</strong>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between mb-3">
+                                <span>Summa:</span>
+                                <strong class="text-primary">{{ table.total_amount|floatformat:0 }} so'm</strong>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'session_detail' table.active_session.pk %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> Ko'rish
+                                </a>
+                                <button class="btn btn-sm btn-success close-session" 
+                                        data-session="{{ table.active_session.pk }}">
+                                    <i class="bi bi-check-circle"></i> Yopish
+                                </button>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-success mb-0 py-2">
+                                <i class="bi bi-check-circle"></i> Bo'sh
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $('.close-session').click(function() {
+        const sessionId = $(this).data('session');
+        
+        if (confirm('Sessiyani yopmoqchimisiz?')) {
+            $.ajax({
+                url: `/waiter/session/${sessionId}/close/`,
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert('Sessiya yopildi');
+                        location.reload();
+                    } else {
+                        alert('Xatolik: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('Xatolik yuz berdi');
+                }
+            });
+        }
+    });
+    
+    // Auto-refresh every 30 seconds
+    setTimeout(function() {
+        location.reload();
+    }, 30000);
+</script>
+{% endblock %}

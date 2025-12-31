@@ -1,0 +1,34 @@
+<div class="order-card">
+    <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+            <h5 class="mb-1">{{ order.menu_item.name }}</h5>
+            <span class="badge bg-info">Stol #{{ order.session.table.number }}</span>
+        </div>
+        <h4 class="text-primary">×{{ order.quantity }}</h4>
+    </div>
+    
+    {% if order.notes %}
+        <p class="text-muted small mb-2">
+            <i class="bi bi-chat-left-text"></i> {{ order.notes }}
+        </p>
+    {% endif %}
+    
+    <div class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">{{ order.created_at|date:"H:i" }}</small>
+        <div class="btn-group btn-group-sm">
+            {% if order.status == 'pending' %}
+                <button class="btn btn-warning" onclick="updateOrderStatus({{ order.id }}, 'cooking')">
+                    <i class="bi bi-fire"></i> Boshlash
+                </button>
+            {% elif order.status == 'cooking' %}
+                <button class="btn btn-success" onclick="updateOrderStatus({{ order.id }}, 'done')">
+                    <i class="bi bi-check-lg"></i> Tayyor
+                </button>
+            {% elif order.status == 'done' %}
+                <button class="btn btn-primary" onclick="updateOrderStatus({{ order.id }}, 'delivered')">
+                    <i class="bi bi-box-seam"></i> Yetkazildi
+                </button>
+            {% endif %}
+        </div>
+    </div>
+</div>

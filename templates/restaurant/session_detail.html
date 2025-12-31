@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+
+{% block title %}Sessiya #{{ session.id }} - QR Menu{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <h2 class="mb-4">
+                <i class="bi bi-receipt"></i> Sessiya #{{ session.id }}
+            </h2>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5><i class="bi bi-table"></i> Stol #{{ session.table.number }}</h5>
+                            <p class="text-muted">{{ session.table.floor }}-etaj</p>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <span class="badge bg-{% if session.status == 'active' %}success{% else %}secondary{% endif %} fs-6">
+                                {{ session.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">Boshlangan:</small>
+                            <p>{{ session.created_at|date:"d.m.Y H:i" }}</p>
+                        </div>
+                        {% if session.closed_at %}
+                            <div class="col-md-6">
+                                <small class="text-muted">Yopilgan:</small>
+                                <p>{{ session.closed_at|date:"d.m.Y H:i" }}</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Orders -->
+            <h4 class="mb-3">Buyurtmalar</h4>
+            {% for order in orders %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-5">
+                                <h5 class="mb-1">{{ order.menu_item.name }}</h5>
+                                <small class="text-muted">{{ order.created_at|date:"H:i" }}</small>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="badge status-badge status-{{ order.status }}">
+                                    {{ order.get_status_display }}
+                                </span>
+                            </div>
+                            <div class="col-md-2 text-center">
+                                <strong>× {{ order.quantity }}</strong>
+                            </div>
+                            <div class="col-md-2 text-end">
+                                <strong>{{ order.get_total_price|floatformat:0 }} so'm</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="alert alert-info">
+                    Buyurtmalar yo'q
+                </div>
+            {% endfor %}
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-body">
+                    <h5 class="card-title">Hisob</h5>
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between mb-3">
+                        <h4>Jami:</h4>
+                        <h4 class="text-primary">{{ total|floatformat:0 }} so'm</h4>
+                    </div>
+                    
+                    {% if payments %}
+                        <h6>To'lovlar:</h6>
+                        {% for payment in payments %}
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>{{ payment.get_payment_type_display }}</span>
+                                <strong>{{ payment.amount|floatformat:0 }} so'm</strong>
+                            </div>
+                        {% endfor %}
+                        <hr>
+                    {% endif %}
+                    
+                    {% if session.status == 'active' %}
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#paymentModal">
+                                <i class="bi bi-cash"></i> To'lov qabul qilish
+                            </button>
+                            
+                            <button class="btn btn-success" onclick="closeSession()">
+                                <i class="bi bi-check-circle"></i> Sessiyani yopish
+                            </button>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i> Sessiya yopilgan
+                        </div>
+                    {% endif %}
+                    
+                    <hr>
+                    
+                    <a href="{% url 'waiter_panel' %}" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-arrow-left"></i> Orqaga
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">To'lov qabul qilish</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="paymentForm">
+                    <div class="mb-3">
+                        <label class="form-label">To'lov turi</label>
+                        <select class="form-select" id="paymentType" required>
+                            <option value="cash">Naqd</option>
+                            <option value="card">Terminal</option>
+                            <option value="click">Click</option>
+                            <option value="payme">Payme</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Summa</label>
+                        <input type="number" class="form-control" id="paymentAmount" 
+                               value="{{ total }}" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        To'lovni tasdiqlash
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $('#paymentForm').submit(function(e) {
+        e.preventDefault();
+        
+        $.ajax({
+            url: '{% url "create_payment" %}',
+            method: 'POST',
+            contentType: 'application/json',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            data: JSON.stringify({
+                session_id: {{ session.id }},
+                payment_type: $('#paymentType').val(),
+                amount: $('#paymentAmount').val()
+            }),
+            success: function(response) {
+                if (response.success) {
+                    alert('To\'lov qabul qilindi');
+                    location.reload();
+                } else {
+                    alert('Xatolik: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Xatolik yuz berdi');
+            }
+        });
+    });
+    
+    function closeSession() {
+        if (confirm('Sessiyani yopmoqchimisiz?')) {
+            $.ajax({
+                url: '{% url "close_session" session.id %}',
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert('Sessiya yopildi');
+                        window.location.href = '{% url "waiter_panel" %}';
+                    } else {
+                        alert('Xatolik: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('Xatolik yuz berdi');
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}

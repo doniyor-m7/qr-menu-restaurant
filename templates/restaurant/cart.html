@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block title %}Savat - QR Menu{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <h2 class="mb-4"><i class="bi bi-cart3"></i> Savat</h2>
+            
+            <div id="cart-items">
+                <!-- Cart items will be loaded here -->
+            </div>
+            
+            <a href="{% url 'menu' %}?table={{ table.number }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Menyuga qaytish
+            </a>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-body">
+                    <h5 class="card-title">Stol #{{ table.number }}</h5>
+                    <p class="text-muted">{{ table.floor }}-etaj</p>
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Jami mahsulotlar:</span>
+                        <strong id="total-items">0</strong>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-3">
+                        <h5>Jami summa:</h5>
+                        <h5 class="text-primary" id="total-amount">0 so'm</h5>
+                    </div>
+                    
+                    <button class="btn btn-primary w-100 mb-2" id="submit-order">
+                        <i class="bi bi-send"></i> Buyurtma berish
+                    </button>
+                    
+                    <a href="{% url 'bill' %}?table={{ table.number }}" class="btn btn-outline-info w-100">
+                        <i class="bi bi-receipt"></i> Hisobni ko'rish
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const tableNumber = '{{ table.number }}';
+    let cart = JSON.parse(localStorage.getItem(`cart_${tableNumber}`) || '{}');
+    
+    function renderCart() {
+        const container = $('#cart-items');
+        container.empty();
+        
+        let totalItems = 0;
+        let totalAmount = 0;
+        
+        if (Object.keys(cart).length === 0) {
+            container.html(`
+                <div class="alert alert-info text-center">
+                    <i class="bi bi-cart-x" style="font-size: 3rem;"></i>
+                    <p class="mt-3">Savat bo'sh</p>
+                    <a href="{% url 'menu' %}?table={{ table.number }}" class="btn btn-primary">
+                        Menyuga o'tish
+                    </a>
+                </div>
+            `);
+            $('#submit-order').prop('disabled', true);
+        } else {
+            $('#submit-order').prop('disabled', false);
+            
+            for (const [id, item] of Object.entries(cart)) {
+                const itemTotal = item.price * item.quantity;
+                totalItems += item.quantity;
+                totalAmount += itemTotal;
+                
+                container.append(`
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <h5 class="mb-1">${item.name}</h5>
+                                    <p class="text-muted mb-0">${item.price.toLocaleString()} so'm</p>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="input-group input-group-sm">
+                                        <button class="btn btn-outline-secondary qty-update" data-id="${id}" data-action="minus">
+                                            <i class="bi bi-dash"></i>
+                                        </button>
+                                        <input type="number" class="form-control text-center" value="${item.quantity}" readonly>
+                                        <button class="btn btn-outline-secondary qty-update" data-id="${id}" data-action="plus">
+                                            <i class="bi bi-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <strong>${itemTotal.toLocaleString()} so'm</strong>
+                                </div>
+                                <div class="col-md-1 text-end">
+                                    <button class="btn btn-sm btn-danger remove-item" data-id="${id}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            }
+        }
+        
+        $('#total-items').text(totalItems);
+        $('#total-amount').text(totalAmount.toLocaleString() + ' so\'m');
+    }
+    
+    function saveCart() {
+        localStorage.setItem(`cart_${tableNumber}`, JSON.stringify(cart));
+        renderCart();
+    }
+    
+    // Update quantity
+    $(document).on('click', '.qty-update', function() {
+        const id = $(this).data('id');
+        const action = $(this).data('action');
+        
+        if (action === 'plus') {
+            cart[id].quantity++;
+        } else if (action === 'minus' && cart[id].quantity > 1) {
+            cart[id].quantity--;
+        }
+        
+        saveCart();
+    });
+    
+    // Remove item
+    $(document).on('click', '.remove-item', function() {
+        const id = $(this).data('id');
+        if (confirm('Mahsulotni o\'chirmoqchimisiz?')) {
+            delete cart[id];
+            saveCart();
+        }
+    });
+    
+    // Submit order
+    $('#submit-order').click(function() {
+        const button = $(this);
+        button.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Yuklanmoqda...');
+        
+        // Prepare order data
+        const items = Object.entries(cart).map(([id, item]) => ({
+            id: parseInt(id),
+            quantity: item.quantity,
+            price: item.price
+        }));
+        
+        // Send to server
+        $.ajax({
+            url: '{% url "order_submit" %}',
+            method: 'POST',
+            contentType: 'application/json',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            data: JSON.stringify({
+                table: tableNumber,
+                items: items
+            }),
+            success: function(response) {
+                if (response.success) {
+                    // Clear cart
+                    cart = {};
+                    saveCart();
+                    
+                    // Show success message
+                    alert('Buyurtma muvaffaqiyatli qabul qilindi!');
+                    window.location.href = '{% url "bill" %}?table={{ table.number }}';
+                } else {
+                    alert('Xatolik: ' + response.message);
+                    button.prop('disabled', false).html('<i class="bi bi-send"></i> Buyurtma berish');
+                }
+            },
+            error: function(xhr) {
+                alert('Xatolik yuz berdi. Qaytadan urinib ko\'ring.');
+                button.prop('disabled', false).html('<i class="bi bi-send"></i> Buyurtma berish');
+            }
+        });
+    });
+    
+    // Initialize
+    renderCart();
+</script>
+{% endblock %}

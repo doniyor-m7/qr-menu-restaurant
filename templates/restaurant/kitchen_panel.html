@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Oshxona paneli - QR Menu{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2><i class="bi bi-fire text-danger"></i> Oshxona paneli</h2>
+            <p class="text-muted">Buyurtmalarni real-time boshqarish</p>
+        </div>
+    </div>
+    
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h3>{{ pending_orders.count }}</h3>
+                    <p class="mb-0"><i class="bi bi-clock"></i> Kutilmoqda</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h3>{{ cooking_orders.count }}</h3>
+                    <p class="mb-0"><i class="bi bi-fire"></i> Tayyorlanmoqda</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h3>{{ today_stats.total_orders|default:0 }}</h3>
+                    <p class="mb-0"><i class="bi bi-check-circle"></i> Bugun bajarildi</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Orders by Status -->
+    <div class="row">
+        <!-- Pending Orders -->
+        <div class="col-lg-4 mb-4">
+            <h4 class="mb-3">
+                <span class="badge bg-warning">Kutilmoqda</span>
+            </h4>
+            <div id="pending-orders">
+                {% for order in pending_orders %}
+                    {% include 'restaurant/partials/order_card.html' with order=order %}
+                {% empty %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Yangi buyurtmalar yo'q
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Cooking Orders -->
+        <div class="col-lg-4 mb-4">
+            <h4 class="mb-3">
+                <span class="badge bg-danger">Tayyorlanmoqda</span>
+            </h4>
+            <div id="cooking-orders">
+                {% for order in cooking_orders %}
+                    {% include 'restaurant/partials/order_card.html' with order=order %}
+                {% empty %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Tayyorlanayotgan buyurtmalar yo'q
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Done Orders -->
+        <div class="col-lg-4 mb-4">
+            <h4 class="mb-3">
+                <span class="badge bg-success">Tayyor</span>
+            </h4>
+            <div id="done-orders">
+                {% for order in done_orders %}
+                    {% include 'restaurant/partials/order_card.html' with order=order %}
+                {% empty %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Tayyor buyurtmalar yo'q
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function updateOrderStatus(orderId, newStatus) {
+        $.ajax({
+            url: '{% url "update_order_status" %}',
+            method: 'POST',
+            contentType: 'application/json',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            data: JSON.stringify({
+                order_id: orderId,
+                status: newStatus
+            }),
+            success: function(response) {
+                if (response.success) {
+                    // Reload page to update orders
+                    location.reload();
+                } else {
+                    alert('Xatolik: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Xatolik yuz berdi');
+            }
+        });
+    }
+    
+    // Auto-refresh every 10 seconds
+    setInterval(function() {
+        location.reload();
+    }, 10000);
+    
+    // Sound notification for new orders (optional)
+    let lastOrderCount = {{ pending_orders.count }};
+    
+    function checkNewOrders() {
+        $.get('{% url "kitchen_orders_api" %}', function(data) {
+            if (data.pending.length > lastOrderCount) {
+                // Play notification sound
+                const audio = new Audio('/static/notification.mp3');
+                audio.play().catch(e => console.log('Audio play failed:', e));
+            }
+            lastOrderCount = data.pending.length;
+        });
+    }
+    
+    setInterval(checkNewOrders, 5000);
+</script>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block title %}Hisob - QR Menu{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <h2><i class="bi bi-receipt"></i> Hisob</h2>
+                        <p class="text-muted">Stol #{{ table.number }} ({{ table.floor }}-etaj)</p>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Orders List -->
+                    <div class="mb-4">
+                        <h5 class="mb-3">Buyurtmalar</h5>
+                        {% for order in orders %}
+                            <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                                <div>
+                                    <h6 class="mb-1">{{ order.menu_item.name }}</h6>
+                                    <small class="text-muted">
+                                        {{ order.price|floatformat:0 }} so'm × {{ order.quantity }}
+                                    </small>
+                                    <br>
+                                    <span class="badge status-badge status-{{ order.status }}">
+                                        {% if order.status == 'pending' %}
+                                            <i class="bi bi-clock"></i> Kutilmoqda
+                                        {% elif order.status == 'cooking' %}
+                                            <i class="bi bi-fire"></i> Tayyorlanmoqda
+                                        {% elif order.status == 'done' %}
+                                            <i class="bi bi-check-circle"></i> Tayyor
+                                        {% elif order.status == 'delivered' %}
+                                            <i class="bi bi-box-seam"></i> Yetkazildi
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="text-end">
+                                    <strong>{{ order.get_total_price|floatformat:0 }} so'm</strong>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="alert alert-info text-center">
+                                Buyurtmalar yo'q
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Total -->
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <h5>Jami:</h5>
+                        </div>
+                        <div class="col-6 text-end">
+                            <h4 class="text-primary">{{ total|floatformat:0 }} so'm</h4>
+                        </div>
+                    </div>
+                    
+                    {% if paid_amount > 0 %}
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <p>To'langan:</p>
+                            </div>
+                            <div class="col-6 text-end">
+                                <p class="text-success">{{ paid_amount|floatformat:0 }} so'm</p>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <h5>Qoldiq:</h5>
+                            </div>
+                            <div class="col-6 text-end">
+                                <h5 class="text-danger">{{ remaining|floatformat:0 }} so'm</h5>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <hr>
+                    
+                    <!-- Actions -->
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'menu' %}?table={{ table.number }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Qo'shimcha buyurtma berish
+                        </a>
+                        
+                        {% if remaining > 0 %}
+                            <button class="btn btn-success" onclick="alert('Ofitsantni chaqiring')">
+                                <i class="bi bi-cash"></i> To'lash
+                            </button>
+                        {% else %}
+                            <button class="btn btn-outline-success" disabled>
+                                <i class="bi bi-check-circle"></i> To'langan
+                            </button>
+                        {% endif %}
+                        
+                        <button class="btn btn-outline-secondary" onclick="window.print()">
+                            <i class="bi bi-printer"></i> Chop etish
+                        </button>
+                    </div>
+                    
+                    <!-- Session Info -->
+                    <div class="mt-4 text-center text-muted">
+                        <small>
+                            Sessiya #{{ session.id }} | 
+                            {{ session.created_at|date:"d.m.Y H:i" }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Print Stylesheet -->
+            <style>
+                @media print {
+                    .navbar, .btn, footer { display: none !important; }
+                    .card { box-shadow: none; border: 1px solid #000; }
+                }
+            </style>
+        </div>
+    </div>
+</div>
+{% endblock %}

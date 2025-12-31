@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+
+{% block title %}Menyu - QR Menu{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    {% if table %}
+        <!-- Table Info -->
+        <div class="table-info">
+            <div class="row align-items-center">
+                <div class="col-6">
+                    <h4 class="mb-0"><i class="bi bi-table"></i> Stol #{{ table.number }}</h4>
+                    <small>{{ table.floor }}-etaj</small>
+                </div>
+                <div class="col-6 text-end">
+                    <a href="{% url 'cart' %}?table={{ table.number }}" class="btn btn-light">
+                        <i class="bi bi-cart3"></i> Savat
+                        <span class="badge bg-danger" id="cart-count">0</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Category Navigation -->
+        <div class="category-nav">
+            <div class="d-flex overflow-auto pb-2">
+                <button class="btn btn-outline-primary me-2 category-filter active" data-category="all">
+                    Barchasi
+                </button>
+                {% for category in categories %}
+                    <button class="btn btn-outline-primary me-2 category-filter" data-category="{{ category.id }}">
+                        {{ category.name }}
+                    </button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Menu Items -->
+        <div class="row g-3 mt-3" id="menu-items">
+            {% for category in categories %}
+                {% for item in category.items.all %}
+                    {% if item.is_available %}
+                        <div class="col-md-6 col-lg-4 menu-item" data-category="{{ category.id }}">
+                            <div class="card h-100">
+                                {% if item.image %}
+                                    <img src="{{ item.image.url }}" class="menu-item-img" alt="{{ item.name }}">
+                                {% else %}
+                                    <div class="menu-item-img bg-secondary d-flex align-items-center justify-content-center">
+                                        <i class="bi bi-image text-white" style="font-size: 3rem;"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ item.name }}</h5>
+                                    <p class="card-text text-muted small">{{ item.description|truncatewords:15 }}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="text-primary mb-0">{{ item.price|floatformat:0 }} so'm</h5>
+                                        {% if item.is_popular %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-star-fill"></i> Mashhur
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="mt-3">
+                                        <div class="input-group">
+                                            <button class="btn btn-outline-secondary btn-sm qty-minus" data-id="{{ item.id }}">
+                                                <i class="bi bi-dash"></i>
+                                            </button>
+                                            <input type="number" class="form-control form-control-sm text-center qty-input" 
+                                                   data-id="{{ item.id }}" 
+                                                   data-name="{{ item.name }}" 
+                                                   data-price="{{ item.price }}" 
+                                                   value="0" min="0" max="99">
+                                            <button class="btn btn-outline-secondary btn-sm qty-plus" data-id="{{ item.id }}">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
+                                        <button class="btn btn-primary btn-sm w-100 mt-2 add-to-cart" data-id="{{ item.id }}">
+                                            <i class="bi bi-cart-plus"></i> Savatga qo'shish
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        </div>
+
+        <!-- Floating Cart Button (Mobile) -->
+        <div class="floating-cart d-md-none">
+            <a href="{% url 'cart' %}?table={{ table.number }}" class="btn btn-primary btn-lg rounded-circle shadow">
+                <i class="bi bi-cart3"></i>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cart-count-mobile">
+                    0
+                </span>
+            </a>
+        </div>
+        
+    {% else %}
+        <div class="alert alert-warning text-center">
+            <i class="bi bi-exclamation-triangle"></i> 
+            Iltimos, QR kodni skanerlang yoki stol raqamini kiriting
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Cart management
+    let cart = JSON.parse(localStorage.getItem('cart_{{ table.number }}') || '{}');
+    
+    function updateCartCount() {
+        const count = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
+        $('#cart-count, #cart-count-mobile').text(count);
+    }
+    
+    function saveCart() {
+        localStorage.setItem('cart_{{ table.number }}', JSON.stringify(cart));
+        updateCartCount();
+    }
+    
+    // Quantity controls
+    $('.qty-plus').click(function() {
+        const id = $(this).data('id');
+        const input = $(`.qty-input[data-id="${id}"]`);
+        let val = parseInt(input.val()) || 0;
+        input.val(val + 1);
+    });
+    
+    $('.qty-minus').click(function() {
+        const id = $(this).data('id');
+        const input = $(`.qty-input[data-id="${id}"]`);
+        let val = parseInt(input.val()) || 0;
+        if (val > 0) {
+            input.val(val - 1);
+        }
+    });
+    
+    // Add to cart
+    $('.add-to-cart').click(function() {
+        const id = $(this).data('id');
+        const input = $(`.qty-input[data-id="${id}"]`);
+        const qty = parseInt(input.val()) || 0;
+        const name = input.data('name');
+        const price = input.data('price');
+        
+        if (qty > 0) {
+            if (!cart[id]) {
+                cart[id] = { name, price, quantity: 0 };
+            }
+            cart[id].quantity += qty;
+            saveCart();
+            
+            // Show success feedback
+            $(this).html('<i class="bi bi-check-lg"></i> Qo\'shildi').addClass('btn-success');
+            setTimeout(() => {
+                $(this).html('<i class="bi bi-cart-plus"></i> Savatga qo\'shish').removeClass('btn-success');
+                input.val(0);
+            }, 1000);
+        } else {
+            alert('Iltimos, miqdorni tanlang');
+        }
+    });
+    
+    // Category filter
+    $('.category-filter').click(function() {
+        $('.category-filter').removeClass('active');
+        $(this).addClass('active');
+        
+        const categoryId = $(this).data('category');
+        
+        if (categoryId === 'all') {
+            $('.menu-item').show();
+        } else {
+            $('.menu-item').hide();
+            $(`.menu-item[data-category="${categoryId}"]`).show();
+        }
+    });
+    
+    // Initialize
+    updateCartCount();
+</script>
+{% endblock %}
