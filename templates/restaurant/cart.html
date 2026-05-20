@@ -1,196 +1,201 @@
 {% extends 'base.html' %}
-
-{% block title %}Savat - QR Menu{% endblock %}
+{% block title %}Savat — Stol #{{ table.number }}{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row">
-        <div class="col-lg-8">
-            <h2 class="mb-4"><i class="bi bi-cart3"></i> Savat</h2>
-            
-            <div id="cart-items">
-                <!-- Cart items will be loaded here -->
-            </div>
-            
-            <a href="{% url 'menu' %}?table={{ table.number }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Menyuga qaytish
-            </a>
-        </div>
-        
-        <div class="col-lg-4">
-            <div class="card sticky-top" style="top: 20px;">
-                <div class="card-body">
-                    <h5 class="card-title">Stol #{{ table.number }}</h5>
-                    <p class="text-muted">{{ table.floor }}-etaj</p>
-                    <hr>
-                    
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Jami mahsulotlar:</span>
-                        <strong id="total-items">0</strong>
-                    </div>
-                    
-                    <div class="d-flex justify-content-between mb-3">
-                        <h5>Jami summa:</h5>
-                        <h5 class="text-primary" id="total-amount">0 so'm</h5>
-                    </div>
-                    
-                    <button class="btn btn-primary w-100 mb-2" id="submit-order">
-                        <i class="bi bi-send"></i> Buyurtma berish
-                    </button>
-                    
-                    <a href="{% url 'bill' %}?table={{ table.number }}" class="btn btn-outline-info w-100">
-                        <i class="bi bi-receipt"></i> Hisobni ko'rish
-                    </a>
-                </div>
-            </div>
-        </div>
+<div class="cart-page" style="padding-bottom:2rem;">
+
+  <div class="page-title">
+    <a href="{% url 'menu' %}?table={{ table.number }}" class="btn-back" style="margin:0;">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <i class="bi bi-cart3" style="color:var(--primary);"></i>
+    {% if lang == 'ru' %}Корзина{% elif lang == 'en' %}Cart{% else %}Savat{% endif %}
+  </div>
+
+  <!-- Stol info -->
+  <div style="background:var(--primary-light);border-radius:var(--radius-md);padding:0.75rem 1rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;">
+    <span style="font-size:0.85rem;font-weight:600;color:var(--primary);">
+      <i class="bi bi-table"></i> Stol #{{ table.number }}
+    </span>
+    <a href="{% url 'bill' %}?table={{ table.number }}"
+       style="font-size:0.78rem;color:var(--primary);font-weight:500;">
+      <i class="bi bi-receipt"></i>
+      {% if lang == 'ru' %}Счёт{% elif lang == 'en' %}Bill{% else %}Hisob{% endif %}
+    </a>
+  </div>
+
+  <!-- Cart items -->
+  <div id="cartItems"></div>
+
+  <!-- Empty state -->
+  <div id="emptyState" style="display:none;text-align:center;padding:3rem 1rem;">
+    <i class="bi bi-cart-x" style="font-size:3.5rem;color:var(--border);display:block;margin-bottom:1rem;"></i>
+    <h4 style="font-weight:700;margin-bottom:0.5rem;">
+      {% if lang == 'ru' %}Корзина пуста{% elif lang == 'en' %}Cart is empty{% else %}Savat bo'sh{% endif %}
+    </h4>
+    <p style="color:var(--muted);font-size:0.88rem;margin-bottom:1.5rem;">
+      {% if lang == 'ru' %}Вернитесь в меню и добавьте блюда{% elif lang == 'en' %}Go back to menu and add items{% else %}Menyuga qayting va taom tanlang{% endif %}
+    </p>
+    <a href="{% url 'menu' %}?table={{ table.number }}"
+       style="background:var(--primary);color:#fff;padding:0.8rem 1.75rem;border-radius:var(--radius-md);font-weight:600;font-size:0.9rem;">
+      <i class="bi bi-arrow-left"></i>
+      {% if lang == 'ru' %}В меню{% elif lang == 'en' %}Back to menu{% else %}Menyuga{% endif %}
+    </a>
+  </div>
+
+  <!-- Summary -->
+  <div id="cartSummary" style="display:none;">
+    <div class="cart-summary">
+      <div class="summary-row">
+        <span>{% if lang == 'ru' %}Позиций{% elif lang == 'en' %}Items{% else %}Mahsulotlar{% endif %}</span>
+        <strong id="totalItems">0</strong>
+      </div>
+      <div class="summary-row total-line">
+        <span>{% if lang == 'ru' %}Итого{% elif lang == 'en' %}Total{% else %}Jami{% endif %}</span>
+        <span id="totalAmount">0</span>
+      </div>
     </div>
+
+    <button class="btn-order" id="submitBtn">
+      <i class="bi bi-send"></i>
+      {% if lang == 'ru' %}Оформить заказ{% elif lang == 'en' %}Place Order{% else %}Buyurtma berish{% endif %}
+    </button>
+
+    <a href="{% url 'menu' %}?table={{ table.number }}" class="btn-back" style="display:flex;justify-content:center;">
+      <i class="bi bi-plus-circle"></i>
+      {% if lang == 'ru' %}Добавить ещё{% elif lang == 'en' %}Add more{% else %}Ko'proq qo'shish{% endif %}
+    </a>
+  </div>
+
+</div>
+
+<!-- Success overlay -->
+<div id="successOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.85);z-index:9999;align-items:center;justify-content:center;flex-direction:column;text-align:center;color:#fff;">
+  <div style="background:#fff;border-radius:var(--radius-xl);padding:2.5rem 2rem;max-width:320px;width:90%;color:var(--dark);">
+    <div style="width:72px;height:72px;background:#d1fae5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;font-size:2rem;color:var(--success);">
+      <i class="bi bi-check-lg"></i>
+    </div>
+    <h3 style="font-weight:700;margin-bottom:0.5rem;">
+      {% if lang == 'ru' %}Заказ принят!{% elif lang == 'en' %}Order placed!{% else %}Buyurtma qabul qilindi!{% endif %}
+    </h3>
+    <p style="color:var(--muted);font-size:0.88rem;margin-bottom:1.5rem;">
+      {% if lang == 'ru' %}Ваш заказ передан на кухню{% elif lang == 'en' %}Your order is sent to the kitchen{% else %}Buyurtmangiz oshxonaga yuborildi{% endif %}
+    </p>
+    <a href="{% url 'bill' %}?table={{ table.number }}"
+       style="background:var(--primary);color:#fff;padding:0.8rem 1.5rem;border-radius:var(--radius-md);font-weight:600;font-size:0.9rem;display:block;">
+      <i class="bi bi-receipt"></i>
+      {% if lang == 'ru' %}Смотреть счёт{% elif lang == 'en' %}View bill{% else %}Hisobni ko'rish{% endif %}
+    </a>
+  </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    const tableNumber = '{{ table.number }}';
-    let cart = JSON.parse(localStorage.getItem(`cart_${tableNumber}`) || '{}');
-    
-    function renderCart() {
-        const container = $('#cart-items');
-        container.empty();
-        
-        let totalItems = 0;
-        let totalAmount = 0;
-        
-        if (Object.keys(cart).length === 0) {
-            container.html(`
-                <div class="alert alert-info text-center">
-                    <i class="bi bi-cart-x" style="font-size: 3rem;"></i>
-                    <p class="mt-3">Savat bo'sh</p>
-                    <a href="{% url 'menu' %}?table={{ table.number }}" class="btn btn-primary">
-                        Menyuga o'tish
-                    </a>
-                </div>
-            `);
-            $('#submit-order').prop('disabled', true);
-        } else {
-            $('#submit-order').prop('disabled', false);
-            
-            for (const [id, item] of Object.entries(cart)) {
-                const itemTotal = item.price * item.quantity;
-                totalItems += item.quantity;
-                totalAmount += itemTotal;
-                
-                container.append(`
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <div class="row align-items-center">
-                                <div class="col-md-6">
-                                    <h5 class="mb-1">${item.name}</h5>
-                                    <p class="text-muted mb-0">${item.price.toLocaleString()} so'm</p>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="input-group input-group-sm">
-                                        <button class="btn btn-outline-secondary qty-update" data-id="${id}" data-action="minus">
-                                            <i class="bi bi-dash"></i>
-                                        </button>
-                                        <input type="number" class="form-control text-center" value="${item.quantity}" readonly>
-                                        <button class="btn btn-outline-secondary qty-update" data-id="${id}" data-action="plus">
-                                            <i class="bi bi-plus"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="col-md-2 text-end">
-                                    <strong>${itemTotal.toLocaleString()} so'm</strong>
-                                </div>
-                                <div class="col-md-1 text-end">
-                                    <button class="btn btn-sm btn-danger remove-item" data-id="${id}">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `);
-            }
-        }
-        
-        $('#total-items').text(totalItems);
-        $('#total-amount').text(totalAmount.toLocaleString() + ' so\'m');
+const TABLE    = '{{ table.number }}';
+const CART_KEY = 'cart_' + TABLE;
+const CSRF     = '{{ csrf_token }}';
+let cart = JSON.parse(localStorage.getItem(CART_KEY) || '{}');
+
+function formatMoney(n) {
+  return Number(n).toLocaleString('uz-UZ') + " {% if lang == 'ru' %}сум{% elif lang == 'en' %}UZS{% else %}so'm{% endif %}";
+}
+
+function renderCart() {
+  const container = document.getElementById('cartItems');
+  const empty     = document.getElementById('emptyState');
+  const summary   = document.getElementById('cartSummary');
+  const submitBtn = document.getElementById('submitBtn');
+
+  container.innerHTML = '';
+  const keys = Object.keys(cart);
+
+  if (keys.length === 0) {
+    empty.style.display = 'block';
+    summary.style.display = 'none';
+    return;
+  }
+
+  empty.style.display = 'none';
+  summary.style.display = 'block';
+
+  let totalItems = 0, totalAmount = 0;
+
+  keys.forEach(id => {
+    const item = cart[id];
+    const lineTotal = item.price * item.qty;
+    totalItems  += item.qty;
+    totalAmount += lineTotal;
+
+    const card = document.createElement('div');
+    card.className = 'cart-item-card';
+    card.innerHTML = `
+      <div class="cart-item-info">
+        <div class="cart-item-name">${item.name}</div>
+        <div class="cart-item-price">${formatMoney(item.price)}</div>
+      </div>
+      <div class="qty-controls" style="width:96px;flex-shrink:0;">
+        <button class="qty-btn" onclick="changeQty('${id}',-1)">−</button>
+        <span class="qty-num">${item.qty}</span>
+        <button class="qty-btn" onclick="changeQty('${id}',1)">+</button>
+      </div>
+      <div class="cart-item-total">${formatMoney(lineTotal)}</div>
+      <button class="remove-btn" onclick="removeItem('${id}')"><i class="bi bi-trash3"></i></button>
+    `;
+    container.appendChild(card);
+  });
+
+  document.getElementById('totalItems').textContent  = totalItems;
+  document.getElementById('totalAmount').textContent = formatMoney(totalAmount);
+  submitBtn.disabled = false;
+}
+
+function changeQty(id, delta) {
+  if (!cart[id]) return;
+  cart[id].qty = Math.max(1, cart[id].qty + delta);
+  localStorage.setItem(CART_KEY, JSON.stringify(cart));
+  renderCart();
+}
+
+function removeItem(id) {
+  delete cart[id];
+  localStorage.setItem(CART_KEY, JSON.stringify(cart));
+  renderCart();
+}
+
+document.getElementById('submitBtn').addEventListener('click', async function() {
+  const btn = this;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> {% if lang == "ru" %}Отправка...{% elif lang == "en" %}Sending...{% else %}Yuborilmoqda...{% endif %}';
+
+  const items = Object.entries(cart).map(([id, item]) => ({
+    id: parseInt(id), quantity: item.qty
+  }));
+
+  try {
+    const res = await fetch('{% url "order_submit" %}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ table: TABLE, items })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      localStorage.removeItem(CART_KEY);
+      const overlay = document.getElementById('successOverlay');
+      overlay.style.display = 'flex';
+    } else {
+      showToast(data.message || '{% if lang == "ru" %}Ошибка{% elif lang == "en" %}Error{% else %}Xatolik{% endif %}', 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-send"></i> {% if lang == "ru" %}Оформить заказ{% elif lang == "en" %}Place Order{% else %}Buyurtma berish{% endif %}';
     }
-    
-    function saveCart() {
-        localStorage.setItem(`cart_${tableNumber}`, JSON.stringify(cart));
-        renderCart();
-    }
-    
-    // Update quantity
-    $(document).on('click', '.qty-update', function() {
-        const id = $(this).data('id');
-        const action = $(this).data('action');
-        
-        if (action === 'plus') {
-            cart[id].quantity++;
-        } else if (action === 'minus' && cart[id].quantity > 1) {
-            cart[id].quantity--;
-        }
-        
-        saveCart();
-    });
-    
-    // Remove item
-    $(document).on('click', '.remove-item', function() {
-        const id = $(this).data('id');
-        if (confirm('Mahsulotni o\'chirmoqchimisiz?')) {
-            delete cart[id];
-            saveCart();
-        }
-    });
-    
-    // Submit order
-    $('#submit-order').click(function() {
-        const button = $(this);
-        button.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Yuklanmoqda...');
-        
-        // Prepare order data
-        const items = Object.entries(cart).map(([id, item]) => ({
-            id: parseInt(id),
-            quantity: item.quantity,
-            price: item.price
-        }));
-        
-        // Send to server
-        $.ajax({
-            url: '{% url "order_submit" %}',
-            method: 'POST',
-            contentType: 'application/json',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            data: JSON.stringify({
-                table: tableNumber,
-                items: items
-            }),
-            success: function(response) {
-                if (response.success) {
-                    // Clear cart
-                    cart = {};
-                    saveCart();
-                    
-                    // Show success message
-                    alert('Buyurtma muvaffaqiyatli qabul qilindi!');
-                    window.location.href = '{% url "bill" %}?table={{ table.number }}';
-                } else {
-                    alert('Xatolik: ' + response.message);
-                    button.prop('disabled', false).html('<i class="bi bi-send"></i> Buyurtma berish');
-                }
-            },
-            error: function(xhr) {
-                alert('Xatolik yuz berdi. Qaytadan urinib ko\'ring.');
-                button.prop('disabled', false).html('<i class="bi bi-send"></i> Buyurtma berish');
-            }
-        });
-    });
-    
-    // Initialize
-    renderCart();
+  } catch (e) {
+    showToast('{% if lang == "ru" %}Ошибка соединения{% elif lang == "en" %}Connection error{% else %}Ulanish xatosi{% endif %}', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-send"></i> {% if lang == "ru" %}Оформить заказ{% elif lang == "en" %}Place Order{% else %}Buyurtma berish{% endif %}';
+  }
+});
+
+renderCart();
 </script>
 {% endblock %}
