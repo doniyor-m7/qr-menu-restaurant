@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, DetailView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse
 from django.utils import timezone
 from django.db.models import Sum, Count, F, ExpressionWrapper, DecimalField
@@ -21,6 +22,42 @@ class HomeView(View):
             elif request.user.groups.filter(name='Waiter').exists():
                 return redirect('waiter_panel')
         return render(request, 'restaurant/home.html')
+
+
+class LoginView(View):
+    def get(self, request):
+        if request.user.is_authenticated:
+            return self._redirect_by_role(request.user)
+        next_url = request.GET.get('next', '')
+        return render(request, 'restaurant/login.html', {'next': next_url})
+
+    def post(self, request):
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
+        next_url = request.POST.get('next', '')
+        user = authenticate(request, username=username, password=password)
+        if user:
+            login(request, user)
+            return redirect(next_url or self._redirect_by_role(user))
+        from django.contrib.auth.forms import AuthenticationForm
+        form = AuthenticationForm()
+        form.add_error(None, 'Login yoki parol noto\'g\'ri')
+        return render(request, 'restaurant/login.html', {'form': form, 'next': next_url})
+
+    def _redirect_by_role(self, user):
+        if user.is_staff or user.is_superuser:
+            return '/admin/'
+        if user.groups.filter(name='Kitchen').exists():
+            return '/kitchen/'
+        if user.groups.filter(name='Waiter').exists():
+            return '/waiter/'
+        return '/'
+
+
+class LogoutView(View):
+    def get(self, request):
+        logout(request)
+        return redirect('login')
 
 
 class SetLanguageView(View):
