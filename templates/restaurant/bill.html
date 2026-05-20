@@ -1,127 +1,103 @@
 {% extends 'base.html' %}
-
-{% block title %}Hisob - QR Menu{% endblock %}
+{% block title %}Hisob — Stol #{{ table.number }}{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-body">
-                    <div class="text-center mb-4">
-                        <h2><i class="bi bi-receipt"></i> Hisob</h2>
-                        <p class="text-muted">Stol #{{ table.number }} ({{ table.floor }}-etaj)</p>
-                    </div>
-                    
-                    <hr>
-                    
-                    <!-- Orders List -->
-                    <div class="mb-4">
-                        <h5 class="mb-3">Buyurtmalar</h5>
-                        {% for order in orders %}
-                            <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
-                                <div>
-                                    <h6 class="mb-1">{{ order.menu_item.name }}</h6>
-                                    <small class="text-muted">
-                                        {{ order.price|floatformat:0 }} so'm × {{ order.quantity }}
-                                    </small>
-                                    <br>
-                                    <span class="badge status-badge status-{{ order.status }}">
-                                        {% if order.status == 'pending' %}
-                                            <i class="bi bi-clock"></i> Kutilmoqda
-                                        {% elif order.status == 'cooking' %}
-                                            <i class="bi bi-fire"></i> Tayyorlanmoqda
-                                        {% elif order.status == 'done' %}
-                                            <i class="bi bi-check-circle"></i> Tayyor
-                                        {% elif order.status == 'delivered' %}
-                                            <i class="bi bi-box-seam"></i> Yetkazildi
-                                        {% endif %}
-                                    </span>
-                                </div>
-                                <div class="text-end">
-                                    <strong>{{ order.get_total_price|floatformat:0 }} so'm</strong>
-                                </div>
-                            </div>
-                        {% empty %}
-                            <div class="alert alert-info text-center">
-                                Buyurtmalar yo'q
-                            </div>
-                        {% endfor %}
-                    </div>
-                    
-                    <hr>
-                    
-                    <!-- Total -->
-                    <div class="row mb-3">
-                        <div class="col-6">
-                            <h5>Jami:</h5>
-                        </div>
-                        <div class="col-6 text-end">
-                            <h4 class="text-primary">{{ total|floatformat:0 }} so'm</h4>
-                        </div>
-                    </div>
-                    
-                    {% if paid_amount > 0 %}
-                        <div class="row mb-3">
-                            <div class="col-6">
-                                <p>To'langan:</p>
-                            </div>
-                            <div class="col-6 text-end">
-                                <p class="text-success">{{ paid_amount|floatformat:0 }} so'm</p>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-3">
-                            <div class="col-6">
-                                <h5>Qoldiq:</h5>
-                            </div>
-                            <div class="col-6 text-end">
-                                <h5 class="text-danger">{{ remaining|floatformat:0 }} so'm</h5>
-                            </div>
-                        </div>
-                    {% endif %}
-                    
-                    <hr>
-                    
-                    <!-- Actions -->
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'menu' %}?table={{ table.number }}" class="btn btn-primary">
-                            <i class="bi bi-plus-circle"></i> Qo'shimcha buyurtma berish
-                        </a>
-                        
-                        {% if remaining > 0 %}
-                            <button class="btn btn-success" onclick="alert('Ofitsantni chaqiring')">
-                                <i class="bi bi-cash"></i> To'lash
-                            </button>
-                        {% else %}
-                            <button class="btn btn-outline-success" disabled>
-                                <i class="bi bi-check-circle"></i> To'langan
-                            </button>
-                        {% endif %}
-                        
-                        <button class="btn btn-outline-secondary" onclick="window.print()">
-                            <i class="bi bi-printer"></i> Chop etish
-                        </button>
-                    </div>
-                    
-                    <!-- Session Info -->
-                    <div class="mt-4 text-center text-muted">
-                        <small>
-                            Sessiya #{{ session.id }} | 
-                            {{ session.created_at|date:"d.m.Y H:i" }}
-                        </small>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Print Stylesheet -->
-            <style>
-                @media print {
-                    .navbar, .btn, footer { display: none !important; }
-                    .card { box-shadow: none; border: 1px solid #000; }
-                }
-            </style>
-        </div>
+<div style="padding:1rem;max-width:480px;margin:0 auto;padding-bottom:2rem;">
+
+  <div class="bill-card">
+    <!-- Header -->
+    <div class="bill-header">
+      <i class="bi bi-receipt" style="font-size:2rem;margin-bottom:0.5rem;display:block;opacity:0.9;"></i>
+      <h2>{% if lang == 'ru' %}Счёт{% elif lang == 'en' %}Bill{% else %}Hisob{% endif %}</h2>
+      <small>
+        {% if lang == 'ru' %}Стол{% elif lang == 'en' %}Table{% else %}Stol{% endif %}
+        #{{ table.number }} · {{ table.floor }}-{% if lang == 'ru' %}этаж{% elif lang == 'en' %}floor{% else %}qavat{% endif %}
+      </small><br>
+      <small style="opacity:0.6;">{{ session.created_at|date:"d.m.Y H:i" }}</small>
     </div>
+
+    <!-- Orders -->
+    <div class="bill-body">
+      <p style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.75rem;">
+        {% if lang == 'ru' %}Заказы{% elif lang == 'en' %}Orders{% else %}Buyurtmalar{% endif %}
+      </p>
+
+      {% for order in orders %}
+      <div class="bill-item">
+        <div>
+          <div class="bill-item-name">
+            {% if lang == 'ru' and order.menu_item.name_ru %}{{ order.menu_item.name_ru }}
+            {% elif lang == 'en' and order.menu_item.name_en %}{{ order.menu_item.name_en }}
+            {% else %}{{ order.menu_item.name }}{% endif %}
+          </div>
+          <div class="bill-item-meta">{{ order.price|floatformat:0 }} × {{ order.quantity }}</div>
+          <span class="bill-status {{ order.status }}">
+            {% if order.status == 'pending' %}<i class="bi bi-clock"></i> {% if lang == 'ru' %}Ожидание{% elif lang == 'en' %}Pending{% else %}Kutilmoqda{% endif %}
+            {% elif order.status == 'cooking' %}<i class="bi bi-fire"></i> {% if lang == 'ru' %}Готовится{% elif lang == 'en' %}Cooking{% else %}Tayyorlanmoqda{% endif %}
+            {% elif order.status == 'done' %}<i class="bi bi-check-circle"></i> {% if lang == 'ru' %}Готово{% elif lang == 'en' %}Ready{% else %}Tayyor{% endif %}
+            {% elif order.status == 'delivered' %}<i class="bi bi-box-seam"></i> {% if lang == 'ru' %}Доставлено{% elif lang == 'en' %}Delivered{% else %}Yetkazildi{% endif %}
+            {% endif %}
+          </span>
+        </div>
+        <div class="bill-item-amount">{{ order.get_total_price|floatformat:0 }} {% if lang == 'ru' %}сум{% elif lang == 'en' %}UZS{% else %}so'm{% endif %}</div>
+      </div>
+      {% empty %}
+      <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.85rem;">
+        {% if lang == 'ru' %}Нет заказов{% elif lang == 'en' %}No orders{% else %}Buyurtmalar yo'q{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Totals -->
+    <div class="bill-footer">
+      <div class="bill-total">
+        <span>{% if lang == 'ru' %}Итого{% elif lang == 'en' %}Total{% else %}Jami{% endif %}</span>
+        <span>{{ total|floatformat:0 }} {% if lang == 'ru' %}сум{% elif lang == 'en' %}UZS{% else %}so'm{% endif %}</span>
+      </div>
+      {% if paid_amount > 0 %}
+      <div class="bill-paid">
+        <span>{% if lang == 'ru' %}Оплачено{% elif lang == 'en' %}Paid{% else %}To'langan{% endif %}</span>
+        <span>{{ paid_amount|floatformat:0 }} {% if lang == 'ru' %}сум{% elif lang == 'en' %}UZS{% else %}so'm{% endif %}</span>
+      </div>
+      {% if remaining > 0 %}
+      <div class="bill-remain">
+        <span>{% if lang == 'ru' %}Остаток{% elif lang == 'en' %}Remaining{% else %}Qoldiq{% endif %}</span>
+        <span>{{ remaining|floatformat:0 }} {% if lang == 'ru' %}сум{% elif lang == 'en' %}UZS{% else %}so'm{% endif %}</span>
+      </div>
+      {% endif %}
+      {% endif %}
+    </div>
+
+    <!-- Actions -->
+    <div class="bill-actions">
+      <a href="{% url 'menu' %}?table={{ table.number }}" class="bill-btn primary">
+        <i class="bi bi-plus-circle"></i>
+        {% if lang == 'ru' %}Добавить заказ{% elif lang == 'en' %}Add more{% else %}Qo'shimcha buyurtma{% endif %}
+      </a>
+      {% if remaining > 0 %}
+      <button class="bill-btn outline" onclick="showToast('{% if lang == "ru" %}Позовите официанта{% elif lang == "en" %}Please call the waiter{% else %}Ofitsantni chaqiring{% endif %}', 'info')">
+        <i class="bi bi-cash-stack"></i>
+        {% if lang == 'ru' %}Оплатить{% elif lang == 'en' %}Pay{% else %}To'lash{% endif %}
+      </button>
+      {% else %}
+      <button class="bill-btn outline" disabled style="opacity:0.5;">
+        <i class="bi bi-check-circle-fill" style="color:var(--success);"></i>
+        {% if lang == 'ru' %}Оплачено{% elif lang == 'en' %}Paid{% else %}To'langan{% endif %}
+      </button>
+      {% endif %}
+      <button class="bill-btn outline" onclick="window.print()">
+        <i class="bi bi-printer"></i>
+        {% if lang == 'ru' %}Распечатать{% elif lang == 'en' %}Print{% else %}Chop etish{% endif %}
+      </button>
+    </div>
+  </div>
+
+  <!-- Session info -->
+  <p style="text-align:center;color:var(--muted);font-size:0.72rem;margin-top:1rem;">
+    Sessiya #{{ session.id }} · {{ session.created_at|date:"d.m.Y H:i" }}
+  </p>
 </div>
+
+<!-- Auto-refresh every 30s to update order statuses -->
+<script>setTimeout(() => location.reload(), 30000);</script>
 {% endblock %}

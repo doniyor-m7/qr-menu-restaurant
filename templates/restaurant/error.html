@@ -1,18 +1,13 @@
 {% extends 'base.html' %}
-
-{% block title %}Xato - QR Menu{% endblock %}
-
+{% block title %}Xatolik{% endblock %}
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6 text-center">
-            <i class="bi bi-exclamation-triangle text-warning" style="font-size: 5rem;"></i>
-            <h1 class="mt-4">Xatolik</h1>
-            <p class="lead text-muted">{{ message|default:"Nimadir noto'g'ri ketdi" }}</p>
-            <a href="{% url 'home' %}" class="btn btn-primary">
-                <i class="bi bi-house"></i> Bosh sahifaga qaytish
-            </a>
-        </div>
-    </div>
+<div class="error-page">
+  <i class="bi bi-exclamation-triangle-fill"></i>
+  <h3>Xatolik yuz berdi</h3>
+  <p>{{ message|default:"Noma'lum xatolik" }}</p>
+  <a href="{% url 'home' %}"
+     style="background:var(--primary);color:#fff;padding:0.8rem 1.75rem;border-radius:var(--radius-md);font-weight:600;font-size:0.9rem;display:inline-flex;align-items:center;gap:0.5rem;margin-top:1rem;">
+    <i class="bi bi-house"></i> Bosh sahifaga
+  </a>
 </div>
 {% endblock %}

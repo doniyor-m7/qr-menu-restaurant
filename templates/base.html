@@ -1,198 +1,66 @@
 <!DOCTYPE html>
-<html lang="uz">
+<html lang="{{ lang|default:'uz' }}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}QR Menu - Restoran{% endblock %}</title>
-    
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    
-    <!-- Custom CSS -->
-    <style>
-        :root {
-            --primary-color: #ff6b6b;
-            --secondary-color: #4ecdc4;
-            --success-color: #51cf66;
-            --warning-color: #ffd43b;
-            --dark-color: #2c3e50;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f8f9fa;
-        }
-        
-        .navbar-brand {
-            font-weight: bold;
-            font-size: 1.5rem;
-        }
-        
-        .card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .btn-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        
-        .btn-primary:hover {
-            background-color: #ee5a6f;
-            border-color: #ee5a6f;
-        }
-        
-        .badge {
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-        }
-        
-        .menu-item-img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            border-radius: 15px 15px 0 0;
-        }
-        
-        .sticky-bottom-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-            padding: 1rem;
-            z-index: 1000;
-        }
-        
-        .floating-cart {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 999;
-        }
-        
-        .category-nav {
-            position: sticky;
-            top: 0;
-            background: white;
-            z-index: 100;
-            padding: 1rem 0;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .table-info {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            padding: 1.5rem;
-            border-radius: 15px;
-            margin-bottom: 1.5rem;
-        }
-        
-        .order-card {
-            background: white;
-            border-radius: 10px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .status-badge {
-            font-size: 0.85rem;
-            padding: 0.35rem 0.75rem;
-        }
-        
-        .status-pending { background-color: #ffc107; }
-        .status-cooking { background-color: #ff9800; }
-        .status-done { background-color: #4caf50; }
-        .status-delivered { background-color: #2196f3; }
-        
-        @media (max-width: 768px) {
-            .menu-item-img {
-                height: 150px;
-            }
-        }
-    </style>
-    
-    {% block extra_css %}{% endblock %}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>{% block title %}QR Menu{% endblock %}</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽️</text></svg>">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/custom.css' %}">
+  {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'home' %}">
-                <i class="bi bi-qr-code-scan text-primary"></i> QR Menu
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    {% if user.is_authenticated %}
-                        {% if user.is_staff %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'admin:index' %}">
-                                    <i class="bi bi-gear"></i> Admin
-                                </a>
-                            </li>
-                        {% endif %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'kitchen_panel' %}">
-                                <i class="bi bi-fire"></i> Oshxona
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'waiter_panel' %}">
-                                <i class="bi bi-person-badge"></i> Ofitsant
-                            </a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </div>
-        </div>
-    </nav>
 
-    <!-- Messages -->
-    {% if messages %}
-        <div class="container mt-3">
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            {% endfor %}
-        </div>
+<nav class="navbar-customer">
+  <a href="{% url 'home' %}" class="navbar-brand-custom">
+    <i class="bi bi-qr-code-scan"></i> QR Menu
+  </a>
+
+  <div style="display:flex;align-items:center;gap:0.6rem;">
+    <!-- Language switcher -->
+    <div class="lang-switcher">
+      <a href="{% url 'set_language' %}?code=uz" class="lang-btn {% if lang == 'uz' or not lang %}active{% endif %}">UZ</a>
+      <a href="{% url 'set_language' %}?code=ru" class="lang-btn {% if lang == 'ru' %}active{% endif %}">RU</a>
+      <a href="{% url 'set_language' %}?code=en" class="lang-btn {% if lang == 'en' %}active{% endif %}">EN</a>
+    </div>
+
+    {% block navbar_right %}{% endblock %}
+
+    {% if user.is_authenticated %}
+      <a href="{% url 'kitchen_panel' %}" class="cart-icon-btn" title="Oshxona">
+        <i class="bi bi-fire"></i>
+      </a>
     {% endif %}
+  </div>
+</nav>
 
-    <!-- Main Content -->
-    <main>
-        {% block content %}{% endblock %}
-    </main>
+{% if messages %}
+  <div style="padding:0.5rem 1rem;">
+    {% for message in messages %}
+      <div style="background:{% if message.tags == 'error' %}#fee2e2{% else %}#d1fae5{% endif %};
+                  color:{% if message.tags == 'error' %}#991b1b{% else %}#065f46{% endif %};
+                  padding:0.6rem 1rem; border-radius:8px; font-size:0.85rem; margin-bottom:4px;">
+        {{ message }}
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
 
-    <!-- Footer -->
-    <footer class="bg-dark text-white text-center py-4 mt-5">
-        <div class="container">
-            <p class="mb-0">&copy; 2025 QR Menu. Barcha huquqlar himoyalangan.</p>
-            <small>Restaurant & Fast-Food Ordering System</small>
-        </div>
-    </footer>
+<main>{% block content %}{% endblock %}</main>
 
-    <!-- Bootstrap 5 JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- jQuery (for AJAX) -->
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    
-    {% block extra_js %}{% endblock %}
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+function showToast(msg, type='info') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast-msg ${type}`;
+  t.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'x-circle' : 'info-circle'}"></i> ${msg}`;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+</script>
+{% block extra_js %}{% endblock %}
 </body>
 </html>

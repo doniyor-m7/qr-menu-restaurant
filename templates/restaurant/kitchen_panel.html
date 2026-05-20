@@ -1,144 +1,218 @@
-{% extends 'base.html' %}
+{% extends 'base_staff.html' %}
+{% block title %}Oshxona paneli{% endblock %}
+{% block page_title %}<i class="bi bi-fire" style="color:var(--primary);"></i> Oshxona{% endblock %}
+{% block active_kitchen %}active{% endblock %}
 
-{% block title %}Oshxona paneli - QR Menu{% endblock %}
+{% block topbar_right %}
+<span id="refreshIndicator" style="font-size:0.75rem;color:var(--muted);display:flex;align-items:center;gap:4px;">
+  <i class="bi bi-arrow-clockwise"></i> <span id="countDown">5</span>s
+</span>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <h2><i class="bi bi-fire text-danger"></i> Oshxona paneli</h2>
-            <p class="text-muted">Buyurtmalarni real-time boshqarish</p>
-        </div>
+
+<!-- Stats -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-icon yellow"><i class="bi bi-clock"></i></div>
+    <div>
+      <div class="stat-value" id="statPending">{{ pending_orders.count }}</div>
+      <div class="stat-label">Kutilmoqda</div>
     </div>
-    
-    <!-- Statistics -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
-                    <h3>{{ pending_orders.count }}</h3>
-                    <p class="mb-0"><i class="bi bi-clock"></i> Kutilmoqda</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card bg-danger text-white">
-                <div class="card-body">
-                    <h3>{{ cooking_orders.count }}</h3>
-                    <p class="mb-0"><i class="bi bi-fire"></i> Tayyorlanmoqda</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h3>{{ today_stats.total_orders|default:0 }}</h3>
-                    <p class="mb-0"><i class="bi bi-check-circle"></i> Bugun bajarildi</p>
-                </div>
-            </div>
-        </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon orange"><i class="bi bi-fire"></i></div>
+    <div>
+      <div class="stat-value" id="statCooking">{{ cooking_orders.count }}</div>
+      <div class="stat-label">Tayyorlanmoqda</div>
     </div>
-    
-    <!-- Orders by Status -->
-    <div class="row">
-        <!-- Pending Orders -->
-        <div class="col-lg-4 mb-4">
-            <h4 class="mb-3">
-                <span class="badge bg-warning">Kutilmoqda</span>
-            </h4>
-            <div id="pending-orders">
-                {% for order in pending_orders %}
-                    {% include 'restaurant/partials/order_card.html' with order=order %}
-                {% empty %}
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> Yangi buyurtmalar yo'q
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
-        
-        <!-- Cooking Orders -->
-        <div class="col-lg-4 mb-4">
-            <h4 class="mb-3">
-                <span class="badge bg-danger">Tayyorlanmoqda</span>
-            </h4>
-            <div id="cooking-orders">
-                {% for order in cooking_orders %}
-                    {% include 'restaurant/partials/order_card.html' with order=order %}
-                {% empty %}
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> Tayyorlanayotgan buyurtmalar yo'q
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
-        
-        <!-- Done Orders -->
-        <div class="col-lg-4 mb-4">
-            <h4 class="mb-3">
-                <span class="badge bg-success">Tayyor</span>
-            </h4>
-            <div id="done-orders">
-                {% for order in done_orders %}
-                    {% include 'restaurant/partials/order_card.html' with order=order %}
-                {% empty %}
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> Tayyor buyurtmalar yo'q
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="bi bi-check-circle"></i></div>
+    <div>
+      <div class="stat-value">{{ today_stats.total_orders|default:0 }}</div>
+      <div class="stat-label">Bugun bajarildi</div>
     </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="bi bi-basket"></i></div>
+    <div>
+      <div class="stat-value">{{ today_stats.total_items|default:0 }}</div>
+      <div class="stat-label">Bugun taomlar</div>
+    </div>
+  </div>
+</div>
+
+<!-- Kanban board -->
+<div class="kanban-board">
+
+  <!-- Pending -->
+  <div class="kanban-col">
+    <div class="kanban-header pending">
+      <span><i class="bi bi-clock"></i> Kutilmoqda</span>
+      <span class="kanban-count" id="pendingCount">{{ pending_orders.count }}</span>
+    </div>
+    <div class="kanban-body" id="pendingCol">
+      {% for order in pending_orders %}
+        {% include 'restaurant/partials/order_card.html' with order=order %}
+      {% empty %}
+        <div class="empty-col"><i class="bi bi-check-circle"></i>Yangi buyurtmalar yo'q</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Cooking -->
+  <div class="kanban-col">
+    <div class="kanban-header cooking">
+      <span><i class="bi bi-fire"></i> Tayyorlanmoqda</span>
+      <span class="kanban-count" id="cookingCount">{{ cooking_orders.count }}</span>
+    </div>
+    <div class="kanban-body" id="cookingCol">
+      {% for order in cooking_orders %}
+        {% include 'restaurant/partials/order_card.html' with order=order %}
+      {% empty %}
+        <div class="empty-col"><i class="bi bi-fire"></i>Hozir tayyorlanayotgan yo'q</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Done -->
+  <div class="kanban-col">
+    <div class="kanban-header done">
+      <span><i class="bi bi-check-circle"></i> Tayyor</span>
+      <span class="kanban-count" id="doneCount">{{ done_orders.count }}</span>
+    </div>
+    <div class="kanban-body" id="doneCol">
+      {% for order in done_orders %}
+        {% include 'restaurant/partials/order_card.html' with order=order %}
+      {% empty %}
+        <div class="empty-col"><i class="bi bi-box-seam"></i>Tayyor buyurtmalar yo'q</div>
+      {% endfor %}
+    </div>
+  </div>
+
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    function updateOrderStatus(orderId, newStatus) {
-        $.ajax({
-            url: '{% url "update_order_status" %}',
-            method: 'POST',
-            contentType: 'application/json',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            data: JSON.stringify({
-                order_id: orderId,
-                status: newStatus
-            }),
-            success: function(response) {
-                if (response.success) {
-                    // Reload page to update orders
-                    location.reload();
-                } else {
-                    alert('Xatolik: ' + response.message);
-                }
-            },
-            error: function() {
-                alert('Xatolik yuz berdi');
-            }
-        });
+const CSRF = '{{ csrf_token }}';
+let lastPendingCount = {{ pending_orders.count }};
+let countdown = 5;
+
+// Update order status
+async function updateStatus(orderId, newStatus) {
+  const card = document.getElementById('card-' + orderId);
+  if (card) card.style.opacity = '0.5';
+
+  try {
+    const res = await fetch('{% url "update_order_status" %}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ order_id: orderId, status: newStatus })
+    });
+    const data = await res.json();
+    if (data.success) {
+      fetchOrders();
+    } else {
+      showToast(data.message || 'Xatolik', 'error');
+      if (card) card.style.opacity = '1';
     }
-    
-    // Auto-refresh every 10 seconds
-    setInterval(function() {
-        location.reload();
-    }, 10000);
-    
-    // Sound notification for new orders (optional)
-    let lastOrderCount = {{ pending_orders.count }};
-    
-    function checkNewOrders() {
-        $.get('{% url "kitchen_orders_api" %}', function(data) {
-            if (data.pending.length > lastOrderCount) {
-                // Play notification sound
-                const audio = new Audio('/static/notification.mp3');
-                audio.play().catch(e => console.log('Audio play failed:', e));
-            }
-            lastOrderCount = data.pending.length;
-        });
+  } catch (e) {
+    showToast('Ulanish xatosi', 'error');
+    if (card) card.style.opacity = '1';
+  }
+}
+
+// Build an order card HTML from JSON data
+function buildCard(o) {
+  const isUrgent = o.elapsed >= 15;
+  const timeClass = isUrgent ? 'time-chip urgent' : 'time-chip';
+  const statusClass = o.status === 'pending' ? 'pending-card' : o.status === 'cooking' ? 'cooking-card' : 'done-card';
+
+  let btnHTML = '';
+  if (o.status === 'pending') {
+    btnHTML = `<button class="btn-status btn-start" onclick="updateStatus(${o.id},'cooking')">
+      <i class="bi bi-fire"></i> Boshlash</button>`;
+  } else if (o.status === 'cooking') {
+    btnHTML = `<button class="btn-status btn-done" onclick="updateStatus(${o.id},'done')">
+      <i class="bi bi-check-lg"></i> Tayyor</button>`;
+  } else if (o.status === 'done') {
+    btnHTML = `<button class="btn-status btn-deliver" onclick="updateStatus(${o.id},'delivered')">
+      <i class="bi bi-box-seam"></i> Yetkazildi</button>`;
+  }
+
+  return `
+    <div class="order-card-k ${statusClass}" id="card-${o.id}">
+      <div class="order-card-top">
+        <span class="order-name">${o.name}</span>
+        <span class="order-qty">×${o.quantity}</span>
+      </div>
+      ${o.notes ? `<div class="order-notes"><i class="bi bi-chat-left-text"></i> ${o.notes}</div>` : ''}
+      <div class="order-meta">
+        <span class="table-chip"><i class="bi bi-table"></i> Stol #${o.table}</span>
+        <span class="${timeClass}"><i class="bi bi-clock"></i> ${o.elapsed}min</span>
+      </div>
+      ${btnHTML}
+    </div>`;
+}
+
+// Fetch & re-render orders via AJAX (no full page reload)
+async function fetchOrders() {
+  try {
+    const res = await fetch('{% url "kitchen_orders_api" %}');
+    const data = await res.json();
+
+    // Check for new orders → sound notification
+    if (data.pending.length > lastPendingCount) {
+      showToast(`Yangi buyurtma! (${data.pending.length} ta kutilmoqda)`, 'warning');
+      try {
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        osc.start(); osc.stop(ctx.currentTime + 0.4);
+      } catch(e) {}
     }
-    
-    setInterval(checkNewOrders, 5000);
+    lastPendingCount = data.pending.length;
+
+    // Re-render columns
+    const pendingCol = document.getElementById('pendingCol');
+    const cookingCol = document.getElementById('cookingCol');
+
+    pendingCol.innerHTML = data.pending.length
+      ? data.pending.map(buildCard).join('')
+      : '<div class="empty-col"><i class="bi bi-check-circle"></i>Yangi buyurtmalar yo\'q</div>';
+
+    cookingCol.innerHTML = data.cooking.length
+      ? data.cooking.map(buildCard).join('')
+      : '<div class="empty-col"><i class="bi bi-fire"></i>Hozir tayyorlanayotgan yo\'q</div>';
+
+    // Update counts
+    document.getElementById('pendingCount').textContent = data.pending.length;
+    document.getElementById('cookingCount').textContent = data.cooking.length;
+    document.getElementById('statPending').textContent  = data.pending.length;
+    document.getElementById('statCooking').textContent  = data.cooking.length;
+
+  } catch (e) {
+    console.error('Fetch failed', e);
+  }
+}
+
+// Countdown & auto-fetch every 5s
+function tick() {
+  countdown--;
+  const el = document.getElementById('countDown');
+  if (el) el.textContent = countdown;
+  if (countdown <= 0) {
+    countdown = 5;
+    fetchOrders();
+  }
+}
+
+setInterval(tick, 1000);
 </script>
 {% endblock %}

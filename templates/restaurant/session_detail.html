@@ -1,214 +1,202 @@
-{% extends 'base.html' %}
-
-{% block title %}Sessiya #{{ session.id }} - QR Menu{% endblock %}
+{% extends 'base_staff.html' %}
+{% block title %}Sessiya #{{ session.id }}{% endblock %}
+{% block page_title %}Sessiya #{{ session.id }}{% endblock %}
+{% block active_waiter %}active{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row">
-        <div class="col-lg-8">
-            <h2 class="mb-4">
-                <i class="bi bi-receipt"></i> Sessiya #{{ session.id }}
+<div style="max-width:860px;">
+
+  <!-- Back -->
+  <a href="{% url 'waiter_panel' %}"
+     style="display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:0.85rem;font-weight:500;margin-bottom:1.25rem;">
+    <i class="bi bi-arrow-left"></i> Ofitsant paneliga qaytish
+  </a>
+
+  <div style="display:grid;grid-template-columns:1fr 320px;gap:1.25rem;align-items:start;">
+
+    <!-- Orders column -->
+    <div>
+      <!-- Session info card -->
+      <div style="background:#fff;border-radius:var(--radius-md);padding:1.25rem;box-shadow:var(--shadow-sm);margin-bottom:1.25rem;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.75rem;">
+          <div>
+            <h2 style="font-size:1.1rem;font-weight:700;margin:0 0 4px;">
+              <i class="bi bi-table" style="color:var(--primary);"></i> Stol #{{ session.table.number }}
             </h2>
-            
-            <div class="card mb-4">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h5><i class="bi bi-table"></i> Stol #{{ session.table.number }}</h5>
-                            <p class="text-muted">{{ session.table.floor }}-etaj</p>
-                        </div>
-                        <div class="col-md-6 text-end">
-                            <span class="badge bg-{% if session.status == 'active' %}success{% else %}secondary{% endif %} fs-6">
-                                {{ session.get_status_display }}
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <hr>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <small class="text-muted">Boshlangan:</small>
-                            <p>{{ session.created_at|date:"d.m.Y H:i" }}</p>
-                        </div>
-                        {% if session.closed_at %}
-                            <div class="col-md-6">
-                                <small class="text-muted">Yopilgan:</small>
-                                <p>{{ session.closed_at|date:"d.m.Y H:i" }}</p>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Orders -->
-            <h4 class="mb-3">Buyurtmalar</h4>
-            {% for order in orders %}
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <div class="row align-items-center">
-                            <div class="col-md-5">
-                                <h5 class="mb-1">{{ order.menu_item.name }}</h5>
-                                <small class="text-muted">{{ order.created_at|date:"H:i" }}</small>
-                            </div>
-                            <div class="col-md-3">
-                                <span class="badge status-badge status-{{ order.status }}">
-                                    {{ order.get_status_display }}
-                                </span>
-                            </div>
-                            <div class="col-md-2 text-center">
-                                <strong>× {{ order.quantity }}</strong>
-                            </div>
-                            <div class="col-md-2 text-end">
-                                <strong>{{ order.get_total_price|floatformat:0 }} so'm</strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            {% empty %}
-                <div class="alert alert-info">
-                    Buyurtmalar yo'q
-                </div>
-            {% endfor %}
+            <span style="font-size:0.78rem;color:var(--muted);">{{ session.table.floor }}-qavat · {{ session.table.seats }} o'rindiq</span>
+          </div>
+          <span style="padding:5px 14px;border-radius:20px;font-size:0.78rem;font-weight:600;
+            background:{% if session.status == 'active' %}#d1fae5;color:#065f46{% elif session.status == 'paid' %}#dbeafe;color:#1e40af{% else %}#f1f5f9;color:#475569{% endif %};">
+            {{ session.get_status_display }}
+          </span>
         </div>
-        
-        <div class="col-lg-4">
-            <div class="card sticky-top" style="top: 20px;">
-                <div class="card-body">
-                    <h5 class="card-title">Hisob</h5>
-                    <hr>
-                    
-                    <div class="d-flex justify-content-between mb-3">
-                        <h4>Jami:</h4>
-                        <h4 class="text-primary">{{ total|floatformat:0 }} so'm</h4>
-                    </div>
-                    
-                    {% if payments %}
-                        <h6>To'lovlar:</h6>
-                        {% for payment in payments %}
-                            <div class="d-flex justify-content-between mb-2">
-                                <span>{{ payment.get_payment_type_display }}</span>
-                                <strong>{{ payment.amount|floatformat:0 }} so'm</strong>
-                            </div>
-                        {% endfor %}
-                        <hr>
-                    {% endif %}
-                    
-                    {% if session.status == 'active' %}
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#paymentModal">
-                                <i class="bi bi-cash"></i> To'lov qabul qilish
-                            </button>
-                            
-                            <button class="btn btn-success" onclick="closeSession()">
-                                <i class="bi bi-check-circle"></i> Sessiyani yopish
-                            </button>
-                        </div>
-                    {% else %}
-                        <div class="alert alert-success">
-                            <i class="bi bi-check-circle"></i> Sessiya yopilgan
-                        </div>
-                    {% endif %}
-                    
-                    <hr>
-                    
-                    <a href="{% url 'waiter_panel' %}" class="btn btn-outline-secondary w-100">
-                        <i class="bi bi-arrow-left"></i> Orqaga
-                    </a>
-                </div>
-            </div>
+        <div style="display:flex;gap:2rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);font-size:0.82rem;color:var(--muted);">
+          <div><i class="bi bi-clock"></i> Boshlangan: <strong style="color:var(--dark);">{{ session.created_at|date:"d.m.Y H:i" }}</strong></div>
+          {% if session.closed_at %}
+          <div><i class="bi bi-check-circle"></i> Yopilgan: <strong style="color:var(--dark);">{{ session.closed_at|date:"d.m.Y H:i" }}</strong></div>
+          {% endif %}
         </div>
+      </div>
+
+      <!-- Orders list -->
+      <div style="background:#fff;border-radius:var(--radius-md);box-shadow:var(--shadow-sm);overflow:hidden;">
+        <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+          <h3 style="font-size:0.95rem;font-weight:700;margin:0;">Buyurtmalar</h3>
+          <span style="font-size:0.78rem;color:var(--muted);">{{ orders.count }} ta</span>
+        </div>
+
+        {% for order in orders %}
+        <div style="padding:0.85rem 1.25rem;border-bottom:1px solid var(--bg);display:flex;align-items:center;justify-content:space-between;gap:1rem;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:0.88rem;">{{ order.menu_item.name }}</div>
+            <div style="font-size:0.75rem;color:var(--muted);">{{ order.created_at|date:"H:i" }}</div>
+          </div>
+          <span style="padding:3px 10px;border-radius:4px;font-size:0.72rem;font-weight:600;flex-shrink:0;
+            {% if order.status == 'pending' %}background:#fef3c7;color:#92400e;
+            {% elif order.status == 'cooking' %}background:#fff1ec;color:#9a3412;
+            {% elif order.status == 'done' %}background:#d1fae5;color:#065f46;
+            {% else %}background:#dbeafe;color:#1e40af;{% endif %}">
+            {{ order.get_status_display }}
+          </span>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-size:0.78rem;color:var(--muted);">×{{ order.quantity }}</div>
+            <div style="font-weight:700;font-size:0.88rem;">{{ order.get_total_price|floatformat:0 }} so'm</div>
+          </div>
+        </div>
+        {% empty %}
+        <div style="padding:2rem;text-align:center;color:var(--muted);font-size:0.85rem;">
+          Buyurtmalar yo'q
+        </div>
+        {% endfor %}
+      </div>
     </div>
+
+    <!-- Summary column -->
+    <div style="position:sticky;top:80px;">
+      <div style="background:#fff;border-radius:var(--radius-md);box-shadow:var(--shadow-sm);overflow:hidden;">
+        <div style="background:linear-gradient(135deg,var(--dark),var(--dark-2));color:#fff;padding:1.1rem 1.25rem;">
+          <div style="font-size:0.8rem;opacity:0.7;margin-bottom:4px;">Umumiy summa</div>
+          <div style="font-size:1.75rem;font-weight:800;">{{ total|floatformat:0 }}</div>
+          <div style="font-size:0.78rem;opacity:0.6;">so'm</div>
+        </div>
+
+        <div style="padding:1rem 1.25rem;">
+          {% if payments %}
+          <div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.75rem;">To'lovlar</div>
+          {% for payment in payments %}
+          <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:0.4rem 0;border-bottom:1px dashed var(--border);">
+            <span>{{ payment.get_payment_type_display }}</span>
+            <strong>{{ payment.amount|floatformat:0 }} so'm</strong>
+          </div>
+          {% endfor %}
+          <div style="height:0.75rem;"></div>
+          {% endif %}
+
+          {% if session.status == 'active' %}
+          <!-- Payment form -->
+          <div style="margin-bottom:1rem;">
+            <label style="font-size:0.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">To'lov turi</label>
+            <select id="payType" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.85rem;font-family:var(--font);outline:none;">
+              <option value="cash">💵 Naqd</option>
+              <option value="card">💳 Terminal</option>
+              <option value="click">📱 Click</option>
+              <option value="payme">📱 Payme</option>
+            </select>
+          </div>
+          <div style="margin-bottom:1rem;">
+            <label style="font-size:0.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">Summa</label>
+            <input type="number" id="payAmount" value="{{ total|floatformat:0 }}"
+                   style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.85rem;font-family:var(--font);outline:none;">
+          </div>
+          <button onclick="submitPayment()" id="payBtn"
+                  style="width:100%;padding:0.8rem;border:none;border-radius:var(--radius-sm);background:var(--primary);color:#fff;font-weight:700;font-size:0.88rem;cursor:pointer;margin-bottom:0.5rem;font-family:var(--font);">
+            <i class="bi bi-cash"></i> To'lovni qabul qilish
+          </button>
+          <button onclick="doCloseSession()" id="closeBtn"
+                  style="width:100%;padding:0.75rem;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:#fff;font-weight:600;font-size:0.85rem;cursor:pointer;font-family:var(--font);">
+            <i class="bi bi-check-circle" style="color:var(--success);"></i> Sessiyani yopish
+          </button>
+          {% else %}
+          <div style="text-align:center;padding:1rem;background:#d1fae5;border-radius:var(--radius-sm);color:#065f46;font-weight:600;font-size:0.88rem;">
+            <i class="bi bi-check-circle-fill"></i> Sessiya yopilgan
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
-<!-- Payment Modal -->
-<div class="modal fade" id="paymentModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">To'lov qabul qilish</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="paymentForm">
-                    <div class="mb-3">
-                        <label class="form-label">To'lov turi</label>
-                        <select class="form-select" id="paymentType" required>
-                            <option value="cash">Naqd</option>
-                            <option value="card">Terminal</option>
-                            <option value="click">Click</option>
-                            <option value="payme">Payme</option>
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Summa</label>
-                        <input type="number" class="form-control" id="paymentAmount" 
-                               value="{{ total }}" required>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary w-100">
-                        To'lovni tasdiqlash
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Mobile responsive -->
+<style>
+@media(max-width:640px){
+  div[style*="grid-template-columns:1fr 320px"]{
+    grid-template-columns:1fr !important;
+  }
+}
+</style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    $('#paymentForm').submit(function(e) {
-        e.preventDefault();
-        
-        $.ajax({
-            url: '{% url "create_payment" %}',
-            method: 'POST',
-            contentType: 'application/json',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            data: JSON.stringify({
-                session_id: {{ session.id }},
-                payment_type: $('#paymentType').val(),
-                amount: $('#paymentAmount').val()
-            }),
-            success: function(response) {
-                if (response.success) {
-                    alert('To\'lov qabul qilindi');
-                    location.reload();
-                } else {
-                    alert('Xatolik: ' + response.message);
-                }
-            },
-            error: function() {
-                alert('Xatolik yuz berdi');
-            }
-        });
+const CSRF = '{{ csrf_token }}';
+
+async function submitPayment() {
+  const btn = document.getElementById('payBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Yuborilmoqda...';
+
+  try {
+    const res = await fetch('{% url "create_payment" %}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({
+        session_id: {{ session.id }},
+        payment_type: document.getElementById('payType').value,
+        amount: document.getElementById('payAmount').value
+      })
     });
-    
-    function closeSession() {
-        if (confirm('Sessiyani yopmoqchimisiz?')) {
-            $.ajax({
-                url: '{% url "close_session" session.id %}',
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                success: function(response) {
-                    if (response.success) {
-                        alert('Sessiya yopildi');
-                        window.location.href = '{% url "waiter_panel" %}';
-                    } else {
-                        alert('Xatolik: ' + response.message);
-                    }
-                },
-                error: function() {
-                    alert('Xatolik yuz berdi');
-                }
-            });
-        }
+    const data = await res.json();
+    if (data.success) {
+      showToast("To'lov qabul qilindi", 'success');
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      showToast(data.message || 'Xatolik', 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-cash"></i> To\'lovni qabul qilish';
     }
+  } catch(e) {
+    showToast('Ulanish xatosi', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-cash"></i> To\'lovni qabul qilish';
+  }
+}
+
+async function doCloseSession() {
+  const btn = document.getElementById('closeBtn');
+  btn.disabled = true;
+  btn.textContent = 'Yopilmoqda...';
+
+  try {
+    const res = await fetch('{% url "close_session" session.id %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF }
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Sessiya yopildi', 'success');
+      setTimeout(() => window.location.href = '{% url "waiter_panel" %}', 1000);
+    } else {
+      showToast(data.message || 'Xatolik', 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-check-circle" style="color:var(--success);"></i> Sessiyani yopish';
+    }
+  } catch(e) {
+    showToast('Ulanish xatosi', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-check-circle" style="color:var(--success);"></i> Sessiyani yopish';
+  }
+}
 </script>
 {% endblock %}

@@ -1,129 +1,172 @@
-{% extends 'base.html' %}
-
-{% block title %}Ofitsant paneli - QR Menu{% endblock %}
+{% extends 'base_staff.html' %}
+{% block title %}Ofitsant paneli{% endblock %}
+{% block page_title %}<i class="bi bi-person-badge" style="color:var(--primary);"></i> Ofitsant{% endblock %}
+{% block active_waiter %}active{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <h2><i class="bi bi-person-badge text-primary"></i> Ofitsant paneli</h2>
-            <p class="text-muted">Stollar va buyurtmalar boshqaruvi</p>
-        </div>
+
+<!-- Stats -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-icon orange"><i class="bi bi-table"></i></div>
+    <div>
+      <div class="stat-value">{{ active_sessions.count }}</div>
+      <div class="stat-label">Faol stollar</div>
     </div>
-    
-    <!-- Statistics -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <h3>{{ active_sessions.count }}</h3>
-                    <p class="mb-0"><i class="bi bi-table"></i> Faol stollar</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h3>{{ today_stats.total_sessions|default:0 }}</h3>
-                    <p class="mb-0"><i class="bi bi-check-circle"></i> Bugun yopilgan</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h3>{{ today_stats.total_revenue|default:0|floatformat:0 }} so'm</h3>
-                    <p class="mb-0"><i class="bi bi-cash-stack"></i> Bugun daromad</p>
-                </div>
-            </div>
-        </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="bi bi-check-circle"></i></div>
+    <div>
+      <div class="stat-value">{{ today_sessions }}</div>
+      <div class="stat-label">Bugun yopildi</div>
     </div>
-    
-    <!-- Tables Grid -->
-    <h4 class="mb-3">Stollar</h4>
-    <div class="row">
-        {% for table in tables %}
-            <div class="col-md-6 col-lg-4 col-xl-3 mb-3">
-                <div class="card {% if table.active_session %}border-primary{% endif %}">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h4 class="mb-0">
-                                <i class="bi bi-table"></i> #{{ table.number }}
-                            </h4>
-                            <span class="badge bg-secondary">{{ table.floor }}-etaj</span>
-                        </div>
-                        
-                        {% if table.active_session %}
-                            <div class="alert alert-primary mb-2 py-2">
-                                <small>
-                                    <i class="bi bi-clock"></i> 
-                                    {{ table.active_session.created_at|date:"H:i" }}
-                                </small>
-                            </div>
-                            
-                            <div class="d-flex justify-content-between mb-2">
-                                <span>Buyurtmalar:</span>
-                                <strong>{{ table.order_count }}</strong>
-                            </div>
-                            
-                            <div class="d-flex justify-content-between mb-3">
-                                <span>Summa:</span>
-                                <strong class="text-primary">{{ table.total_amount|floatformat:0 }} so'm</strong>
-                            </div>
-                            
-                            <div class="d-grid gap-2">
-                                <a href="{% url 'session_detail' table.active_session.pk %}" 
-                                   class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-eye"></i> Ko'rish
-                                </a>
-                                <button class="btn btn-sm btn-success close-session" 
-                                        data-session="{{ table.active_session.pk }}">
-                                    <i class="bi bi-check-circle"></i> Yopish
-                                </button>
-                            </div>
-                        {% else %}
-                            <div class="alert alert-success mb-0 py-2">
-                                <i class="bi bi-check-circle"></i> Bo'sh
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        {% endfor %}
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="bi bi-cash-stack"></i></div>
+    <div>
+      <div class="stat-value" style="font-size:1.1rem;">{{ today_revenue|floatformat:0 }}</div>
+      <div class="stat-label">Bugun daromad (so'm)</div>
     </div>
+  </div>
 </div>
+
+<!-- Section title -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+  <h2 style="font-size:1rem;font-weight:700;margin:0;">Stollar</h2>
+  <span style="font-size:0.78rem;color:var(--muted);">
+    <span style="display:inline-block;width:10px;height:10px;background:var(--success);border-radius:50%;margin-right:4px;"></span>Bo'sh
+    <span style="display:inline-block;width:10px;height:10px;background:var(--primary);border-radius:50%;margin:0 4px 0 12px;"></span>Band
+    <span style="display:inline-block;width:10px;height:10px;background:var(--danger);border-radius:50%;margin:0 4px 0 12px;"></span>Kutilmoqda
+  </span>
+</div>
+
+<!-- Table grid -->
+<div class="table-grid">
+  {% for table in tables %}
+  <div class="table-card">
+    {% if table.active_session %}
+      <div class="table-card-top {% if table.pending_count > 0 %}waiting{% else %}busy{% endif %}">
+        <span class="table-num"><i class="bi bi-table"></i> #{{ table.number }}</span>
+        <span class="floor-tag">{{ table.floor }}-qavat</span>
+      </div>
+      <div class="table-card-body">
+        <div class="table-stat">
+          <span>Buyurtmalar</span>
+          <strong>{{ table.order_count }}</strong>
+        </div>
+        {% if table.pending_count > 0 %}
+        <div class="table-stat">
+          <span style="color:var(--danger);">Kutilayotgan</span>
+          <strong style="color:var(--danger);">{{ table.pending_count }}</strong>
+        </div>
+        {% endif %}
+        <div class="table-stat">
+          <span>Boshlangan</span>
+          <strong>{{ table.active_session.created_at|date:"H:i" }}</strong>
+        </div>
+        <div class="table-amount">{{ table.total_amount|floatformat:0 }} so'm</div>
+      </div>
+      <div class="table-actions">
+        <a href="{% url 'session_detail' table.active_session.pk %}" class="btn-view-t">
+          <i class="bi bi-eye"></i> Ko'rish
+        </a>
+        <button class="btn-close-s close-session-btn"
+                data-session="{{ table.active_session.pk }}"
+                data-table="{{ table.number }}">
+          <i class="bi bi-check-circle"></i> Yopish
+        </button>
+      </div>
+    {% else %}
+      <div class="table-card-top empty">
+        <span class="table-num"><i class="bi bi-table"></i> #{{ table.number }}</span>
+        <span class="floor-tag">{{ table.floor }}-qavat</span>
+      </div>
+      <div class="table-card-body">
+        <div style="display:flex;align-items:center;gap:6px;color:var(--success);font-size:0.82rem;font-weight:500;margin-bottom:4px;">
+          <i class="bi bi-check-circle-fill"></i> Bo'sh
+        </div>
+        <div class="table-stat">
+          <span>O'rindiqlar</span>
+          <strong>{{ table.seats }}</strong>
+        </div>
+      </div>
+      <div style="padding:0 1rem 1rem;">
+        <a href="{% url 'menu' %}?table={{ table.number }}"
+           style="display:flex;align-items:center;justify-content:center;gap:5px;padding:6px;border-radius:var(--radius-sm);background:var(--bg);border:1px solid var(--border);font-size:0.73rem;font-weight:600;color:var(--dark);text-decoration:none;">
+          <i class="bi bi-qr-code"></i> Menyu
+        </a>
+      </div>
+    {% endif %}
+  </div>
+  {% empty %}
+  <div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted);">
+    <i class="bi bi-table" style="font-size:3rem;display:block;margin-bottom:1rem;opacity:0.3;"></i>
+    <p>Stollar topilmadi</p>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Confirm modal -->
+<div id="confirmModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:var(--radius-lg);padding:1.75rem;max-width:320px;width:90%;text-align:center;">
+    <i class="bi bi-exclamation-triangle" style="font-size:2rem;color:var(--warning);margin-bottom:0.75rem;display:block;"></i>
+    <h4 style="font-weight:700;margin-bottom:0.5rem;">Sessiyani yopish</h4>
+    <p style="color:var(--muted);font-size:0.88rem;margin-bottom:1.5rem;" id="confirmText">Stol seans yopilsinmi?</p>
+    <div style="display:flex;gap:0.75rem;">
+      <button onclick="closeModal()" style="flex:1;padding:0.75rem;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:#fff;font-weight:600;cursor:pointer;">Bekor</button>
+      <button onclick="confirmClose()" id="confirmBtn" style="flex:1;padding:0.75rem;border:none;border-radius:var(--radius-sm);background:var(--success);color:#fff;font-weight:600;cursor:pointer;">Yopish</button>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    $('.close-session').click(function() {
-        const sessionId = $(this).data('session');
-        
-        if (confirm('Sessiyani yopmoqchimisiz?')) {
-            $.ajax({
-                url: `/waiter/session/${sessionId}/close/`,
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                success: function(response) {
-                    if (response.success) {
-                        alert('Sessiya yopildi');
-                        location.reload();
-                    } else {
-                        alert('Xatolik: ' + response.message);
-                    }
-                },
-                error: function() {
-                    alert('Xatolik yuz berdi');
-                }
-            });
-        }
+const CSRF = '{{ csrf_token }}';
+let targetSessionId = null;
+
+document.querySelectorAll('.close-session-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    targetSessionId = btn.dataset.session;
+    const tableNum  = btn.dataset.table;
+    document.getElementById('confirmText').textContent = `Stol #${tableNum} sessiyasi yopilsinmi?`;
+    const modal = document.getElementById('confirmModal');
+    modal.style.display = 'flex';
+  });
+});
+
+function closeModal() {
+  document.getElementById('confirmModal').style.display = 'none';
+  targetSessionId = null;
+}
+
+async function confirmClose() {
+  if (!targetSessionId) return;
+  const btn = document.getElementById('confirmBtn');
+  btn.textContent = 'Yuborilmoqda...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`/waiter/session/${targetSessionId}/close/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF }
     });
-    
-    // Auto-refresh every 30 seconds
-    setTimeout(function() {
-        location.reload();
-    }, 30000);
+    const data = await res.json();
+    closeModal();
+    if (data.success) {
+      showToast('Sessiya muvaffaqiyatli yopildi', 'success');
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      showToast(data.message || 'Xatolik yuz berdi', 'error');
+    }
+  } catch (e) {
+    closeModal();
+    showToast('Ulanish xatosi', 'error');
+  }
+}
+
+// Auto-refresh every 60s
+setTimeout(() => location.reload(), 60000);
 </script>
 {% endblock %}
